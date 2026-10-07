@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学習時間記録アプリ</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #4a90e2;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        h1 { text-align: center; font-size: 24px; margin-bottom: 25px; color: var(--primary-color); }
+        .total-box {
+            background: #eef5fc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .total-box span { font-size: 32px; font-weight: bold; color: var(--primary-color); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input, select, button {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        input[type="number"] { flex: 1; }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:active { opacity: 0.8; }
+        .history-list { list-style: none; padding: 0; margin: 0; }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+        .date { color: #888; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📝 学習時間メーター</h1>
+    
+    <!-- 合計時間の表示エリア -->
+    <div class="total-box">
+        <p style="margin:0 0 5px 0; color:#666;">これまでの合計勉強時間</p>
+        <div><span id="total-hours">0</span> 時間</div>
+    </div>
+
+    <!-- 入力フォーム -->
+    <div class="input-group">
+        <select id="subject">
+            <option value="英語">英語 🇬🇧</option>
+            <option value="数学">数学 📐</option>
+            <option value="国語">国語 📖</option>
+            <option value="プログラミング">プログラミング 💻</option>
+            <option value="その他">その他 ✏️</option>
+        </select>
+        <input type="number" id="hours" placeholder="時間（例: 1.5）" step="0.1" min="0">
+        <button id="add-btn">記録する</button>
+    </div>
+
+    <!-- 過去の履歴表示エリア -->
+    <h3>これまでの履歴</h3>
+    <ul id="history-list" class="history-list">
+        <!-- ここにスクリプトで履歴が追加されます -->
+    </ul>
+</div>
+
+<!-- 💡 データを保存して計算するスクリプト -->
+<script>
+    // 画面の要素を取得
+    const totalHoursEl = document.getElementById('total-hours');
+    const subjectEl = document.getElementById('subject');
+    const hoursEl = document.getElementById('hours');
+    const addBtn = document.getElementById('add-btn');
+    const historyListEl = document.getElementById('history-list');
+
+    // 1. ページを開いたときに、過去のデータをブラウザから読み込む
+    let studyRecords = JSON.parse(localStorage.getItem('studyRecords')) || [];
+
+    // 画面を更新する関数
+    function updateData() {
+        // 履歴リストを一度空にする
+        historyListEl.innerHTML = '';
+        let total = 0;
+
+        // 履歴を新しい順（上）に表示
+        studyRecords.slice().reverse().forEach(record => {
+            total += parseFloat(record.hours);
+
+            const li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = `
+                <div>
+                    <strong>${record.subject}</strong> : ${record.hours}時間
+                    <div class="date">${record.date}</div>
+                </div>
+            `;
+            historyListEl.appendChild(li);
+        });
+
+        // 合計時間を小数点第1位まで計算して表示
+        totalHoursEl.textContent = total.toFixed(1);
+    }
+
+    // 2. 「記録する」ボタンが押されたときの処理
+    addBtn.addEventListener('click', () => {
+        const subject = subjectEl.value;
+        const hours = parseFloat(hoursEl.value);
+
+        // 数字が正しく入力されていない場合は無視する
+        if (isNaN(hours) || hours <= 0) {
+            alert('有効な時間を入力してください');
+            return;
+        }
+
+        // 今日の日付を取得
+        const now = new Date();
+        const dateString = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // 新しいデータをオブジェクトとして作成
+        const newRecord = {
+            subject: subject,
+            hours: hours,
+            date: dateString
+        };
+
+        // データを配列に追加して、ブラウザに保存
+        studyRecords.push(newRecord);
+        localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
+
+        // 入力欄を空にして、画面を更新
+        hoursEl.value = '';
+        updateData();
+    });
+
+    // 最初の一回、画面にデータを表示する
+    updateData();
+</script>
+
+</body>
+</html>
